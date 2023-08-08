@@ -1,18 +1,18 @@
-#- model: exchange.rate
-#  pk: 1
-#  fields:
-#    date: 2022-01-01
-#    vendor: mono
-#    currency_a: USD
-#    currency_b: EUR
-#    sell: 1.1
-#    buy: 1.2
-#- model: exchange.rate
-#  pk: 2
-#  fields:
-#    date: 2022-01-01
-#    vendor: privat
-#    currency_a: USD
-#    currency_b: EUR
-#    sell: 1.01
-#    buy: 1.0
+- model: exchange.rate
+  pk: 1
+  fields:
+    date: 2023-08-07
+    vendor: mono
+    currency_a: EUR
+    currency_b: UAH
+    sell: 41.5507
+    buy: 40.25
+- model: exchange.rate
+  pk: 2
+  fields:
+    date: 2023-08-07
+    vendor: privat
+    currency_a: EUR
+    currency_b: UAH
+    sell: 41.84100
+    buy: 40.00240

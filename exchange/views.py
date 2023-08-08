@@ -53,3 +53,11 @@ def index(request):
     else:
         form = ExchangeForm()
     return render(request, "index.html", {"form": form})
+
+
+def rates(request):
+    current_date = datetime.date.today()
+    current_rates = Rate.objects.filter(date=current_date).all().values()
+    return JsonResponse(
+        {"current_rates": list(current_rates)}, encoder=DecimalAsFloatJSONEncoder
+    )

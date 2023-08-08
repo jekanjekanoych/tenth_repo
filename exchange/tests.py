@@ -5,7 +5,7 @@ import pytest
 import responses
 from django.core.management import call_command
 from freezegun import freeze_time
-
+from django.test.client import RequestFactory
 from .exchange_provider import (
     MonoExchange,
     PrivatExchange,
@@ -13,7 +13,7 @@ from .exchange_provider import (
     GovUaExchange,
     MinfinExchange,
 )
-from .views import index
+from .views import index, best_rate, rates
 
 root = pathlib.Path(__file__).parent
 
@@ -86,3 +86,90 @@ def test_minfin(mocked):
     e = MinfinExchange("minfin", "USD", "UAH")
     e.get_rate()
     assert e.pair.sell == 37.4000
+
+    @pytest.fixture(scope="session")
+    def django_db_setup(django_db_setup, django_db_blocker):
+        with django_db_blocker.unblock():
+            call_command("loaddata", "db_init.yaml")
+
+    @freeze_time("2023-08-07")
+    @pytest.mark.django_db
+    def test_index_view():
+        response = index(None)
+        assert response.status_code == 200
+        assert json.loads(response.content) == {
+            "current_rates": [
+                {
+                    "id": 1,
+                    "date": "2023-08-07",
+                    "vendor": "mono",
+                    "currency_a": "EUR",
+                    "currency_b": "UAH",
+                    "sell": 41.5507,
+                    "buy": 40.25,
+                },
+                {
+                    "id": 2,
+                    "date": "2023-08-07",
+                    "vendor": "privat",
+                    "currency_a": "EUR",
+                    "currency_b": "UAH",
+                    "sell": 41.84100,
+                    "buy": 40.00240,
+                },
+            ]
+        }
+
+    @freeze_time("2023-08-07")
+    @pytest.mark.django_db
+    def test_index_view_get():
+        r = RequestFactory()
+        request = r.get("")
+        response = index(request)
+        assert response.status_code == 200
+
+    @pytest.mark.django_db
+    def test_best_rate_sell():
+        current_date = "2023-08-07"
+        currency = "EUR"
+        operation = "sell"
+        best_rate = best_rate(current_date, currency, operation)
+        assert float(best_rate[operation]) == 41.84100
+
+    @pytest.mark.django_db
+    def test_best_rate_buy():
+        current_date = "2023-08-07"
+        currency = "EUR"
+        operation = "buy"
+        best_rate = best_rate(current_date, currency, operation)
+        assert float(best_rate[operation]) == 40.00240
+
+    @freeze_time("2023-08-07")
+    @pytest.mark.django_db
+    def test_index_view_post_sell():
+        r = RequestFactory()
+        request = r.post(
+            "",
+            {
+                "currency_value": "200",
+                "operation": "sell",
+                "currency": "EUR",
+            },
+        )
+        response = index(request)
+        assert response.status_code == 200
+
+    @freeze_time("2023-08-07")
+    @pytest.mark.django_db
+    def test_index_view_post_buy():
+        r = RequestFactory()
+        request = r.post(
+            "",
+            {
+                "currency_value": "300",
+                "operation": "buy",
+                "currency": "EUR",
+            },
+        )
+        response = index(request)
+        assert response.status_code == 200
